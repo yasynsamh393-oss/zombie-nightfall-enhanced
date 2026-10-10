@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zombie Nightfall Enhanced</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        canvas {
+            display: block;
+            background: #1a1a2e;
+            margin: auto;
+        }
+
+        .ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ui-overlay.active {
+            display: flex;
+        }
+
+        .menu-panel {
+            background: #16213e;
+            border: 4px solid #e94560;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
+        }
+
+        .menu-title {
+            font-size: 2.5em;
+            color: #e94560;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px #000;
+        }
+
+        .menu-btn, .menu-option {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: #0f3460;
+            border: 2px solid #e94560;
+            color: #fff;
+            font-size: 1.1em;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.2s;
+        }
+
+        .menu-btn:hover, .menu-option:hover {
+            background: #e94560;
+            color: #0f3460;
+            transform: scale(1.05);
+        }
+
+        .menu-btn.small {
+            padding: 10px;
+            font-size: 0.9em;
+            width: auto;
+            margin: 5px;
+        }
+
+        .hud {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            font-size: 1.2em;
+            z-index: 100;
+        }
+
+        .hud-stat {
+            margin: 5px 0;
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border-left: 3px solid #fff;
+        }
+
+        .hud-stat.health { border-left-color: #e94560; }
+        .hud-stat.ammo { border-left-color: #f1c40f; }
+        .hud-stat.xp { border-left-color: #2ecc71; }
+        .hud-stat.wave { border-left-color: #3498db; }
+
+        .minimap {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 120px;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #2ecc71;
+            z-index: 100;
+        }
+
+        .pause-menu {
+            text-align: center;
+        }
+
+        .pause-menu h2 {
+            font-size: 2em;
+            color: #e94560;
+            margin-bottom: 20px;
+        }
+
+        .skin-preview {
+            width: 150px;
+            height: 150px;
+            border: 3px solid #e94560;
+            background: #0f3460;
+            margin: 20px auto;
+            position: relative;
+        }
+
+        .skin-bar {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding: 10px;
+            background: #0f3460;
+            border: 2px solid #e94560;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        .skin-item {
+            min-width: 60px;
+            height: 60px;
+            background: #16213e;
+            border: 2px solid #666;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .skin-item:hover {
+            border-color: #e94560;
+        }
+
+        .skin-item.selected {
+            border-color: #2ecc71;
+            background: #1a5c3a;
+        }
+
+        .skin-item.locked {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .skin-info {
+            margin: 15px 0;
+            padding: 10px;
+            background: #0f3460;
+            border-left: 3px solid #e94560;
+        }
+
+        .skill-choice {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .skill-card {
+            padding: 15px;
+            background: #16213e;
+            border: 2px solid #f1c40f;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .skill-card:hover {
+            background: #0f3460;
+            transform: scale(1.05);
+        }
+
+        .skill-name {
+            font-size: 1.3em;
+            color: #f1c40f;
+            margin-bottom: 5px;
+        }
+
+        .skill-desc {
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        .bar {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border: 1px solid #666;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: #2ecc71;
+            width: 100%;
+            transition: width 0.2s;
+        }
+
+        .bar.health .bar-fill { background: #e94560; }
+        .bar.ammo .bar-fill { background: #f1c40f; }
+        .bar.xp .bar-fill { background: #2ecc71; }
+
+        @media (max-width: 600px) {
+            .menu-panel {
+                max-width: 95vw;
+                padding: 15px;
+            }
+            .menu-title {
+                font-size: 1.8em;
+            }
+            .skill-choice {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="hud">
+        <div class="hud-stat health">❤️ HP: <span id="hudHealth">100</span>/<span id="hudMaxHealth">100</span></div>
+        <div class="hud-stat ammo">🔫 Ammo: <span id="hudAmmo">30</span>/<span id="hudMagSize">30</span></div>
+        <div class="hud-stat xp">⭐ XP: <span id="hudXP">0</span>/<span id="hudXPNext">100</span></div>
+        <div class="hud-stat wave">🌊 Wave: <span id="hudWave">1</span> | Time: <span id="hudTime">0:00</span></div>
+        <div class="hud-stat">💰 Coins: <span id="hudCoins">0</span></div>
+        <div class="hud-stat">📊 Score: <span id="hudScore">0</span></div>
+    </div>
+
+    <canvas id="minimapCanvas" class="minimap"></canvas>
+
+    <div id="mainMenu" class="ui-overlay active">
+        <div class="menu-panel">
+            <h1 class="menu-title">🧟 ZOMBIE NIGHTFALL</h1>
+            <button class="menu-btn" onclick="game.showGamesMenu()">▶️ GAMES</button>
+            <button class="menu-btn" onclick="game.showSkinsMenu()">👤 SKINS</button>
+            <button class="menu-btn" onclick="game.showThemesMenu()">🎨 THEMES</button>
+            <button class="menu-btn" onclick="game.showSettingsMenu()">⚙️ SETTINGS</button>
+        </div>
+    </div>
+
+    <div id="gamesMenu" class="ui-overlay">
+        <div class="menu-panel">
+            <h2 class="menu-title">📋 SELECT GAME</h2>
+            <button class="menu-btn" onclick="game.showGameModeMenu()">NEW GAME</button>
+            <button class="menu-btn" onclick="game.backToMain()">« BACK</button>
+        </div>
+    </div>
+
+    <div id="gameModeMenu" class="ui-overlay">
+        <div class="menu-panel">
+            <h2 class="menu-title">⚙️ GAME MODE</h2>
+            <button class="menu-btn" onclick="game.selectPlatform('PC')">💻 PC</button>
+            <button class="menu-btn" onclick="game.selectPlatform('Mobile')">📱 MOBILE</button>
+            <button class="menu-btn" onclick="game.backToGames()">« BACK</button>
+        </div>
+    </div>
+
+    <div id="playerCountMenu" class="ui-overlay">
+        <div class="menu-panel">
+            <h2 class="menu-title">👥 PLAYERS</h2>
+            <button class="menu-btn" onclick="game.startGame(1)">1 PLAYER</button>
+            <button id="twoPlayerBtn" class="menu-btn" onclick="game.startGame(2)">2 PLAYERS</button>
+            <button class="menu-btn" onclick="game.backToMode()">« BACK</button>
+        </div>
+    </div>
+
+    <div id="skinsMenu" class="ui-overlay">
+        <div class="menu-panel">
+            <h2 class="menu-title">👤 SKINS</h2>
+            <canvas id="skinPreviewCanvas" class="skin-preview"></canvas>
+            <div id="skinInfo" class="skin-info">
+                <div id="skinName">Recruit</div>
+                <div id="skinDesc">Basic outfit</div>
+                <div style="margin-top: 10px;">
+                    <div>HP: <span id="skinHP">100</span></div>
+                    <div>DMG: <span id="skinDMG">10</span></div>
+                    <div>SPD: <span id="skinSPD">100</span></div>
+                    <div id="skinStatus">Unlocked</div>
+                </div>
+                <button class="menu-btn small" id="skinActionBtn" onclick="game.selectSkin()">SELECT</button>
+            </div>
+            <div class="skin-bar" id="skinBar"></div>
+            <button class="menu-btn" onclick="game.backToMain()">« BACK</button>
+        </div>
+    </div>
+
+    <div id="themesMenu" class="ui-overlay">
+        <div class="menu-panel">
+            <h2 class="menu-title">🎨 THEMES</h2>
+            <button class="menu-btn" onclick="game.setTheme('dark')">🌙 DARK MODE</button>
+            <button class="menu-btn" onclick="game.setTheme('cyber')">💜 CYBER</button>
+            <button class="menu-btn" onclick="game.setTheme('forest')">🌲 FOREST</button>
+            <button class="menu-btn" onclick="game.backToMain()">« BACK</button>
+        </div>
+    </div>
+
+    <div id="settingsMenu" class="ui-overlay">
+        <div class="menu-panel">
+            <h2 class="menu-title">⚙️ SETTINGS</h2>
+            <div style="margin: 15px 0;">
+                <label>🎵 Music: <input type="range" min="0" max="100" value="70" id="musicVolume" style="width: 60%; vertical-align: middle;"></label>
+            </div>
+            <div style="margin: 15px 0;">
+                <label>🔊 SFX: <input type="range" min="0" max="100" value="70" id="sfxVolume" style="width: 60%; vertical-align: middle;"></label>
+            </div>
+            <div style="margin: 15px 0;">
+                <label>
+                    ✨ Screen Shake: <input type="checkbox" id="screenShake" checked>
+                </label>
+            </div>
+            <div style="margin: 15px 0;">
+                <label>🌐 Language:</label>
+                <select id="languageSelect" style="width: 100%; padding: 8px; margin-top: 5px; background: #0f3460; color: #fff; border: 2px solid #e94560;">
+                    <option value="en">English</option>
+                    <option value="ar">العربية</option>
+                    <option value="zh">中文</option>
+                    <option value="de">Deutsch</option>
+                    <option value="es">Español</option>
+                    <option value="ko">한국어</option>
+                    <option value="ja">日本語</option>
+                </select>
+            </div>
+            <button class="menu-btn" onclick="game.backToMain()">« BACK</button>
+        </div>
+    </div>
+
+    <div id="pauseMenu" class="ui-overlay">
+        <div class="menu-panel pause-menu">
+            <h2>⏸️ PAUSED</h2>
+            <button class="menu-btn" onclick="game.resumeGame()">▶️ RESUME</button>
+            <button class="menu-btn" onclick="game.backToMain()">🏠 MAIN MENU</button>
+        </div>
+    </div>
+
+    <div id="gameOverMenu" class="ui-overlay">
+        <div class="menu-panel pause-menu">
+            <h2>💀 GAME OVER</h2>
+            <div style="margin: 20px 0; font-size: 1.3em;">
+                <div>Final Score: <span id="finalScore">0</span></div>
+                <div>Wave: <span id="finalWave">1</span></div>
+                <div>Time: <span id="finalTime">0:00</span></div>
+                <div style="color: #f1c40f; margin-top: 10px;">+<span id="earnedCoins">0</span> 💰</div>
+            </div>
+            <button class="menu-btn" onclick="game.startGame(game.currentPlayers)">🔄 PLAY AGAIN</button>
+            <button class="menu-btn" onclick="game.backToMain()">🏠 MAIN MENU</button>
+        </div>
+    </div>
+
+    <div id="levelUpMenu" class="ui-overlay">
+        <div class="menu-panel">
+            <h2 class="menu-title">⬆️ LEVEL UP!</h2>
+            <p style="text-align: center; margin: 15px 0; font-size: 1.2em;">Level <span id="currentLevel">1</span></p>
+            <div class="skill-choice" id="skillChoice"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== GAME CONFIG ====================
+        const CANVAS_WIDTH = 1200;
+        const CANVAS_HEIGHT = 800;
+        const GAME_CONFIG = {
+            maxHealth: 100,
+            damagePerShot: 10,
+            fireRate: 100,
+            magSize: 30,
+            reloadTime: 1000,
+            speed: 3,
+            stamina: 100,
+            sprintMultiplier: 1.5
+        };
+
+        const SKILLS = [
+            { id: 'damage', name: 'Damage', desc: '+25% Damage', icon: '⚔️' },
+            { id: 'speed', name: 'Speed', desc: '+20% Movement Speed', icon: '💨' },
+            { id: 'health', name: 'Max HP', desc: '+25 Health', icon: '❤️' },
+            { id: 'magsize', name: 'Magazine', desc: '+10 Ammo', icon: '📦' },
+            { id: 'firerate', name: 'Fire Rate', desc: '+25% Fire Speed', icon: '⚡' },
+            { id: 'crit', name: 'Critical', desc: '+10% Crit Chance', icon: '💥' },
+            { id: 'regen', name: 'Regeneration', desc: '+1 HP/sec', icon: '✨' },
+            { id: 'multishot', name: 'Multi-Shot', desc: '+1 Projectile', icon: '🎯' },
+            { id: 'shield', name: 'Shield', desc: 'Reduce next damage by 50%', icon: '🛡️' },
+            { id: 'shock', name: 'Shock', desc: 'Stun enemies 1s', icon: '⚡' },
+            { id: 'dash', name: 'Dash', desc: 'Quick dodge ability', icon: '➡️' }
+        ];
+
+        // ==================== TRANSLATIONS ====================
+        const TRANSLATIONS = {
+            en: {
+                health: 'Health', ammo: 'Ammo', xp: 'XP', wave: 'Wave', time: 'Time',
+                coins: 'Coins', score: 'Score', paused: 'PAUSED', gameOver: 'GAME OVER',
+                finalScore: 'Final Score', earnedCoins: 'Earned Coins',
+                games: 'GAMES', skins: 'SKINS', themes: 'THEMES', settings: 'SETTINGS',
+                newGame: 'NEW GAME', back: 'BACK', resume: 'RESUME', mainMenu: 'MAIN MENU',
+                pc: 'PC', mobile: 'MOBILE', players: 'PLAYERS', onePlayer: '1 PLAYER',
+                twoPlayers: '2 PLAYERS', unlocked: 'Unlocked', locked: 'Locked',
+                select: 'SELECT', recruit: 'Recruit', basicOutfit: 'Basic outfit'
+            },
+            ar: {
+                health: 'الصحة', ammo: 'الذخيرة', xp: 'الخبرة', wave: 'الموجة', time: 'الوقت',
+                coins: 'العملات', score: 'النقاط', paused: 'متوقف مؤقتاً', gameOver: 'انتهت اللعبة',
+                finalScore: 'النقاط النهائية', earnedCoins: 'العملات المكتسبة',
+                games: 'الألعاب', skins: 'الشخصيات', themes: 'المواضيع', settings: 'الإعدادات',
+                newGame: 'لعبة جديدة', back: 'رجوع', resume: 'استئناف', mainMenu: 'القائمة الرئيسية',
+                pc: 'كمبيوتر', mobile: 'موبايل', players: 'اللاعبون', onePlayer: 'لاعب واحد',
+                twoPlayers: 'لاعبان', unlocked: 'مفتوح', locked: 'مقفول', select: 'اختر',
+                recruit: 'المجند', basicOutfit: 'زي أساسي'
+            },
+            zh: {
+                health: '生命', ammo: '弹药', xp: '经验', wave: '波', time: '时间',
+                coins: '金币', score: '得分', paused: '暂停', gameOver: '游戏结束',
+                finalScore: '最终得分', earnedCoins: '获得金币',
+                games: '游戏', skins: '皮肤', themes: '主题', settings: '设置',
+                newGame: '新游戏', back: '返回', resume: '继续', mainMenu: '主菜单',
+                pc: '电脑', mobile: '手机', players: '玩家', onePlayer: '1个玩家',
+                twoPlayers: '2个玩家', unlocked: '已解锁', locked: '已锁定', select: '选择',
+                recruit: '新兵', basicOutfit: '基本服装'
+            }
+        };
+
+        // ==================== GAME CLASS ====================
+        class ZombieNightfall {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.minimapCanvas = document.getElementById('minimapCanvas');
+                this.minimapCtx = this.minimapCanvas.getContext('2d');
+                
+                this.canvas.width = CANVAS_WIDTH;
+                this.canvas.height = CANVAS_HEIGHT;
+
+                this.gameState = 'menu'; // menu, playing, paused, gameOver, levelUp
+                this.currentPlayers = 1;
+                this.platform = 'PC';
+                this.selectedSkin = 0;
+                this.currentLanguage = localStorage.getItem('language') || 'en';
+                this.currentTheme = localStorage.getItem('theme') || 'dark';
+
+                this.players = [];
+                this.zombies = [];
+                this.projectiles = [];
+                this.particles = [];
+                
+                this.gameTime = 0;
+                this.wave = 1;
+                this.waveProgress = 0;
+                this.coins = parseInt(localStorage.getItem('coins')) || 0;
+                
+                this.keys = {};
+                this.mouse = { x: 0, y: 0 };
+
+                this.skins = this.generateSkins();
+                this.unlockedSkins = JSON.parse(localStorage.getItem('unlockedSkins')) || [0];
+
+                this.setupEventListeners();
+                this.applyTheme();
+                this.updateLanguage();
+                this.loadSettings();
+                this.startGameLoop();
+            }
+
+            generateSkins() {
+                const skinColors = [
+                    { name: 'Recruit', hp: 100, dmg: 10, spd: 100, color: '#333', cost: 0 },
+                    { name: 'Scout', hp: 85, dmg: 15, spd: 120, color: '#555', cost: 100 },
+                    { name: 'Soldier', hp: 120, dmg: 12, spd: 95, color: '#444', cost: 150 },
+                    { name: 'Commando', hp: 110, dmg: 18, spd: 110, color: '#222', cost: 250 },
+                    { name: 'Trooper', hp: 130, dmg: 14, spd: 100, color: '#666', cost: 200 },
+                    { name: 'Ranger', hp: 95, dmg: 16, spd: 125, color: '#388e3c', cost: 300 },
+                    { name: 'Veteran', hp: 140, dmg: 20, spd: 105, color: '#8b4513', cost: 400 },
+                    { name: 'Elite', hp: 125, dmg: 22, spd: 115, color: '#ffd700', cost: 500 },
+                    { name: 'Shadow', hp: 105, dmg: 19, spd: 130, color: '#1a1a1a', cost: 600 },
+                    { name: 'Reaper', hp: 115, dmg: 25, spd: 120, color: '#8b0000', cost: 700 },
+                    { name: 'Phantom', hp: 100, dmg: 21, spd: 135, color: '#4b0082', cost: 800 },
+                    { name: 'Spectre', hp: 130, dmg: 18, spd: 125, color: '#00ced1', cost: 750 },
+                    { name: 'Titan', hp: 180, dmg: 16, spd: 85, color: '#a9a9a9', cost: 900 },
+                    { name: 'Gladiator', hp: 160, dmg: 24, spd: 100, color: '#ff8c00', cost: 850 },
+                    { name: 'Berserker', hp: 140, dmg: 28, spd: 110, color: '#ff0000', cost: 950 },
+                    { name: 'Ninja', hp: 90, dmg: 20, spd: 140, color: '#000000', cost: 1000 },
+                    { name: 'Samurai', hp: 130, dmg: 26, spd: 115, color: '#c0504d', cost: 1050 },
+                    { name: 'Cyborg', hp: 125, dmg: 23, spd: 120, color: '#70ad47', cost: 1100 },
+                    { name: 'Ghost', hp: 100, dmg: 20, spd: 150, color: '#d3d3d3', cost: 1200 },
+                    { name: 'Wraith', hp: 110, dmg: 22, spd: 145, color: '#808080', cost: 1150 },
+                    { name: 'Demon', hp: 150, dmg: 30, spd: 125, color: '#800080', cost: 1300 },
+                    { name: 'Dragon', hp: 170, dmg: 28, spd: 120, color: '#228b22', cost: 1400 },
+                    { name: 'Phoenix', hp: 140, dmg: 26, spd: 130, color: '#ff4500', cost: 1350 },
+                    { name: 'Kraken', hp: 160, dmg: 24, spd: 115, color: '#191970', cost: 1250 },
+                    { name: 'Cerberus', hp: 150, dmg: 27, spd: 118, color: '#2f2f2f', cost: 1500 },
+                    { name: 'Hydra', hp: 180, dmg: 25, spd: 112, color: '#006400', cost: 1600 },
+                    { name: 'Minotaur', hp: 200, dmg: 23, spd: 100, color: '#8b4513', cost: 1550 },
+                    { name: 'Valkyrie', hp: 130, dmg: 25, spd: 125, color: '#9370db', cost: 1450 },
+                    { name: 'Draconian', hp: 155, dmg: 29, spd: 120, color: '#654321', cost: 1700 },
+                    { name: 'Infernal', hp: 145, dmg: 31, spd: 128, color: '#ff6347', cost: 1800 },
+                    { name: 'Arcane', hp: 135, dmg: 28, spd: 135, color: '#4169e1', cost: 1750 },
+                    { name: 'Celestial', hp: 125, dmg: 27, spd: 140, color: '#ffff00', cost: 1900 },
+                    { name: 'Void', hp: 140, dmg: 32, spd: 130, color: '#000033', cost: 2000 },
+                    { name: 'Eternal', hp: 150, dmg: 30, spd: 125, color: '#c0c0c0', cost: 1950 },
+                    { name: 'Divine', hp: 145, dmg: 33, spd: 135, color: '#fffacd', cost: 2100 },
+                    { name: 'Apocalypse', hp: 180, dmg: 35, spd: 140, color: '#2f4f4f', cost: 2500 },
+                    { name: 'Oblivion', hp: 165, dmg: 34, spd: 145, color: '#1c1c1c', cost: 2400 },
+                    { name: 'Sovereignty', hp: 155, dmg: 31, spd: 132, color: '#696969', cost: 2200 },
+                    { name: 'Maelstrom', hp: 170, dmg: 32, spd: 138, color: '#00bfff', cost: 2300 },
+                    { name: 'Leviathan', hp: 190, dmg: 29, spd: 115, color: '#00008b', cost: 2350 },
+                    { name: 'Ragnarok', hp: 185, dmg: 36, spd: 135, color: '#ff00ff', cost: 2600 },
+                    { name: 'Primal', hp: 160, dmg: 33, spd: 128, color: '#8fbc8f', cost: 2250 },
+                    { name: 'Savagery', hp: 155, dmg: 37, spd: 132, color: '#a52a2a', cost: 2550 },
+                    { name: 'Tempest', hp: 140, dmg: 30, spd: 150, color: '#4a90e2', cost: 2150 },
+                    { name: 'Nexus', hp: 150, dmg: 34, spd: 140, color: '#9932cc', cost: 2450 },
+                    { name: 'Infinity', hp: 160, dmg: 38, spd: 145, color: '#ff1493', cost: 2700 },
+                    { name: 'Singularity', hp: 175, dmg: 39, spd: 148, color: '#000080', cost: 2800 },
+                    { name: 'Cosmos', hp: 170, dmg: 37, spd: 142, color: '#191970', cost: 2750 },
+                    { name: 'Nebula', hp: 165, dmg: 36, spd: 146, color: '#483d8b', cost: 2900 }
+                ];
+
+                return skinColors;
+            }
+
+            setupEventListeners() {
+                window.addEventListener('keydown', (e) => { this.keys[e.key.toLowerCase()] = true; });
+                window.addEventListener('keyup', (e) => { this.keys[e.key.toLowerCase()] = false; });
+                this.canvas.addEventListener('mousemove', (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.mouse.x = e.clientX - rect.left;
+                    this.mouse.y = e.clientY - rect.top;
+                });
+                this.canvas.addEventListener('click', () => {
+                    if (this.gameState === 'playing' && this.players.length > 0) {
+                        this.players[0].shoot();
+                    }
+                });
+
+                document.getElementById('languageSelect').addEventListener('change', (e) => {
+                    this.setLanguage(e.target.value);
+                });
+                document.getElementById('musicVolume').addEventListener('change', (e) => {
+                    localStorage.setItem('musicVolume', e.target.value);
+                });
+                document.getElementById('sfxVolume').addEventListener('change', (e) => {
+                    localStorage.setItem('sfxVolume', e.target.value);
+                });
+                document.getElementById('screenShake').addEventListener('change', (e) => {
+                    localStorage.setItem('screenShake', e.target.checked);
+                });
+            }
+
+            loadSettings() {
+                document.getElementById('musicVolume').value = localStorage.getItem('musicVolume') || 70;
+                document.getElementById('sfxVolume').value = localStorage.getItem('sfxVolume') || 70;
+                document.getElementById('screenShake').checked = localStorage.getItem('screenShake') !== 'false';
+            }
+
+            applyTheme() {
+                const themes = {
+                    dark: { bg: '#0a0a0a', panel: '#16213e', accent: '#e94560', secondary: '#0f3460' },
+                    cyber: { bg: '#0d0221', panel: '#3a0ca3', accent: '#7209b7', secondary: '#560bad' },
+                    forest: { bg: '#0b3d2c', panel: '#0d5e3e', accent: '#06a77d', secondary: '#118b6f' }
+                };
+                const theme = themes[this.currentTheme] || themes.dark;
+                document.documentElement.style.setProperty('--bg', theme.bg);
+                document.documentElement.style.setProperty('--panel', theme.panel);
+                document.documentElement.style.setProperty('--accent', theme.accent);
+            }
+
+            setTheme(themeName) {
+                this.currentTheme = themeName;
+                localStorage.setItem('theme', themeName);
+                this.applyTheme();
+            }
+
+            setLanguage(lang) {
+                this.currentLanguage = lang;
+                localStorage.setItem('language', lang);
+                this.updateLanguage();
+            }
+
+            updateLanguage() {
+                const t = TRANSLATIONS[this.currentLanguage] || TRANSLATIONS.en;
+                // Update UI elements based on language
+            }
+
+            showGamesMenu() {
+                this.hideAllMenus();
+                document.getElementById('gamesMenu').classList.add('active');
+            }
+
+            showGameModeMenu() {
+                this.hideAllMenus();
+                document.getElementById('gameModeMenu').classList.add('active');
+            }
+
+            showPlayerCountMenu() {
+                this.hideAllMenus();
+                document.getElementById('playerCountMenu').classList.add('active');
+            }
+
+            backToMode() {
+                this.hideAllMenus();
+                document.getElementById('gameModeMenu').classList.add('active');
+            }
+
+            backToGames() {
+                this.hideAllMenus();
+                document.getElementById('gamesMenu').classList.add('active');
+            }
+
+            selectPlatform(platform) {
+                this.platform = platform;
+                if (platform === 'Mobile') {
+                    document.getElementById('twoPlayerBtn').disabled = true;
+                    this.startGame(1);
+                } else {
+                    this.showPlayerCountMenu();
+                }
+            }
+
+            showSkinsMenu() {
+                this.hideAllMenus();
+                document.getElementById('skinsMenu').classList.add('active');
+                this.renderSkinsMenu();
+            }
+
+            renderSkinsMenu() {
+                const skinBar = document.getElementById('skinBar');
+                skinBar.innerHTML = '';
+
+                this.skins.forEach((skin, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'skin-item';
+                    if (!this.unlockedSkins.includes(index)) div.classList.add('locked');
+                    if (this.selectedSkin === index) div.classList.add('selected');
+                    
+                    div.innerHTML = '👤';
+                    div.style.background = skin.color;
+                    div.onclick = () => this.updateSkinPreview(index);
+                    skinBar.appendChild(div);
+                });
+
+                this.updateSkinPreview(this.selectedSkin);
+            }
+
+            updateSkinPreview(index) {
+                if (!this.unlockedSkins.includes(index) && this.skins[index].cost > 0) return;
+                
+                const skin = this.skins[index];
+                document.getElementById('skinName').textContent = skin.name;
+                document.getElementById('skinDesc').textContent = `Tier ${Math.floor(index / 5) + 1}`;
+                document.getElementById('skinHP').textContent = skin.hp;
+                document.getElementById('skinDMG').textContent = skin.dmg;
+                document.getElementById('skinSPD').textContent = skin.spd;
+
+                const statusDiv = document.getElementById('skinStatus');
+                if (this.unlockedSkins.includes(index)) {
+                    statusDiv.textContent = '✅ Unlocked';
+                    statusDiv.style.color = '#2ecc71';
+                    document.getElementById('skinActionBtn').textContent = 'SELECT';
+                } else {
+                    statusDiv.textContent = `🔒 ${skin.cost} Coins`;
+                    statusDiv.style.color = '#f1c40f';
+                    document.getElementById('skinActionBtn').textContent = 'BUY';
+                }
+
+                this.currentSkinPreview = index;
+                this.renderSkinPreview();
+            }
+
+            renderSkinPreview() {
+                const canvas = document.getElementById('skinPreviewCanvas');
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#0f3460';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const skin = this.skins[this.currentSkinPreview];
+
+                ctx.fillStyle = skin.color;
+                ctx.fillRect(centerX - 20, centerY - 30, 40, 50);
+                ctx.fillStyle = '#ffdbac';
+                ctx.fillRect(centerX - 15, centerY - 45, 30, 20);
+                ctx.fillStyle = '#333';
+                ctx.fillRect(centerX - 10, centerY - 40, 6, 6);
+                ctx.fillRect(centerX + 4, centerY - 40, 6, 6);
+            }
+
+            selectSkin() {
+                const skin = this.skins[this.currentSkinPreview];
+                if (!this.unlockedSkins.includes(this.currentSkinPreview)) {
+                    if (this.coins >= skin.cost) {
+                        this.coins -= skin.cost;
+                        this.unlockedSkins.push(this.currentSkinPreview);
+                        localStorage.setItem('coins', this.coins);
+                        localStorage.setItem('unlockedSkins', JSON.stringify(this.unlockedSkins));
+                        this.renderSkinsMenu();
+                    } else {
+                        alert('Not enough coins!');
+                    }
+                } else {
+                    this.selectedSkin = this.currentSkinPreview;
+                    localStorage.setItem('selectedSkin', this.selectedSkin);
+                    this.renderSkinsMenu();
+                }
+            }
+
+            showThemesMenu() {
+                this.hideAllMenus();
+                document.getElementById('themesMenu').classList.add('active');
+            }
+
+            showSettingsMenu() {
+                this.hideAllMenus();
+                document.getElementById('settingsMenu').classList.add('active');
+            }
+
+            startGame(players) {
+                this.currentPlayers = players;
+                this.hideAllMenus();
+                this.initializeGame();
+                this.gameState = 'playing';
+            }
+
+            initializeGame() {
+                this.players = [];
+                this.zombies = [];
+                this.projectiles = [];
+                this.particles = [];
+                this.gameTime = 0;
+                this.wave = 1;
+                this.waveProgress = 0;
+
+                const skin = this.skins[this.selectedSkin];
+                this.players.push(new Player(300, 400, 0, skin));
+                if (this.currentPlayers === 2) {
+                    this.players.push(new Player(900, 400, 1, this.skins[1]));
+                }
+
+                this.spawnZombies();
+            }
+
+            spawnZombies() {
+                const zombieCount = 5 + this.wave * 3;
+                for (let i = 0; i < zombieCount; i++) {
+                    const angle = (Math.random() * Math.PI * 2);
+                    const distance = 400 + Math.random() * 200;
+                    const x = CANVAS_WIDTH / 2 + Math.cos(angle) * distance;
+                    const y = CANVAS_HEIGHT / 2 + Math.sin(angle) * distance;
+                    const type = Math.random() < 0.1 ? 'runner' : (Math.random() < 0.15 ? 'tank' : 'normal');
+                    this.zombies.push(new Zombie(x, y, type, this.wave));
+                }
+            }
+
+            pauseGame() {
+                this.gameState = 'paused';
+                this.hideAllMenus();
+                document.getElementById('pauseMenu').classList.add('active');
+            }
+
+            resumeGame() {
+                this.gameState = 'playing';
+                this.hideAllMenus();
+            }
+
+            endGame() {
+                this.gameState = 'gameOver';
+                const finalCoins = Math.floor(this.gameTime / 60) * 10 + Math.floor(this.wave * 50);
+                this.coins += finalCoins;
+                localStorage.setItem('coins', this.coins);
+
+                document.getElementById('finalScore').textContent = this.players[0].score;
+                document.getElementById('finalWave').textContent = this.wave;
+                document.getElementById('finalTime').textContent = this.formatTime(this.gameTime);
+                document.getElementById('earnedCoins').textContent = finalCoins;
+
+                this.hideAllMenus();
+                document.getElementById('gameOverMenu').classList.add('active');
+            }
+
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            backToMain() {
+                this.gameState = 'menu';
+                this.hideAllMenus();
+                document.getElementById('mainMenu').classList.add('active');
+            }
+
+            hideAllMenus() {
+                document.querySelectorAll('.ui-overlay').forEach(m => m.classList.remove('active'));
+            }
+
+            update() {
+                if (this.gameState !== 'playing') return;
+
+                this.gameTime += 1 / 60;
+                this.waveProgress++;
+
+                if (this.waveProgress > 600 + this.wave * 100) {
+                    this.wave++;
+                    this.waveProgress = 0;
+                    this.spawnZombies();
+                }
+
+                this.players.forEach((p, i) => {
+                    if (p.alive) {
+                        p.update(this.keys, this.mouse, i === 0);
+                        if (this.gameTime > 0 && this.gameTime % 60 === 0) {
+                            this.coins += 1;
+                        }
+                    }
+                });
+
+                this.zombies.forEach(z => z.update(this.players));
+
+                this.projectiles.forEach(p => p.update());
+                this.projectiles = this.projectiles.filter(p => !p.destroy);
+
+                this.particles.forEach(p => p.update());
+                this.particles = this.particles.filter(p => p.lifetime > 0);
+
+                this.checkCollisions();
+                this.updateHUD();
+
+                if (this.players.every(p => !p.alive)) {
+                    this.endGame();
+                }
+            }
+
+            checkCollisions() {
+                // Player-Zombie collisions
+                this.players.forEach(p => {
+                    this.zombies.forEach(z => {
+                        if (p.alive && this.distance(p.x, p.y, z.x, z.y) < 30) {
+                            p.takeDamage(1);
+                        }
+                    });
+                });
+
+                // Projectile-Zombie collisions
+                this.projectiles.forEach((proj, pi) => {
+                    this.zombies.forEach((z, zi) => {
+                        if (this.distance(proj.x, proj.y, z.x, z.y) < 20) {
+                            z.takeDamage(proj.damage);
+                            proj.destroy = true;
+                            this.particles.push(new Particle(proj.x, proj.y, 'blood'));
+                            
+                            if (z.hp <= 0) {
+                                this.players[proj.owner].score += z.baseHp;
+                                this.zombies.splice(zi, 1);
+                            }
+                        }
+                    });
+                });
+            }
+
+            distance(x1, y1, x2, y2) {
+                return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+            }
+
+            updateHUD() {
+                if (this.players.length === 0) return;
+                const p = this.players[0];
+                document.getElementById('hudHealth').textContent = Math.max(0, p.hp);
+                document.getElementById('hudMaxHealth').textContent = p.maxHp;
+                document.getElementById('hudAmmo').textContent = p.ammo;
+                document.getElementById('hudMagSize').textContent = p.magSize;
+                document.getElementById('hudXP').textContent = p.xp;
+                document.getElementById('hudXPNext').textContent = p.xpToLevel;
+                document.getElementById('hudWave').textContent = this.wave;
+                document.getElementById('hudTime').textContent = this.formatTime(this.gameTime);
+                document.getElementById('hudCoins').textContent = this.coins;
+                document.getElementById('hudScore').textContent = p.score;
+            }
+
+            render() {
+                this.ctx.fillStyle = '#1a1a2e';
+                this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+                this.players.forEach(p => p.render(this.ctx));
+                this.zombies.forEach(z => z.render(this.ctx));
+                this.projectiles.forEach(p => p.render(this.ctx));
+                this.particles.forEach(p => p.render(this.ctx));
+
+                this.renderMinimap();
+            }
+
+            renderMinimap() {
+                const w = this.minimapCanvas.width;
+                const h = this.minimapCanvas.height;
+                this.minimapCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                this.minimapCtx.fillRect(0, 0, w, h);
+
+                const scale = 0.1;
+                this.players.forEach(p => {
+                    this.minimapCtx.fillStyle = '#2ecc71';
+                    this.minimapCtx.fillRect(p.x * scale - 2, p.y * scale - 2, 4, 4);
+                });
+
+                this.zombies.forEach(z => {
+                    this.minimapCtx.fillStyle = '#e94560';
+                    this.minimapCtx.fillRect(z.x * scale - 2, z.y * scale - 2, 4, 4);
+                });
+            }
+
+            startGameLoop() {
+                setInterval(() => {
+                    this.update();
+                    this.render();
+                }, 1000 / 60);
+            }
+        }
+
+        // ==================== PLAYER CLASS ====================
+        class Player {
+            constructor(x, y, id, skin) {
+                this.x = x;
+                this.y = y;
+                this.id = id;
+                this.vx = 0;
+                this.vy = 0;
+                this.alive = true;
+                this.skin = skin;
+
+                this.maxHp = skin.hp;
+                this.hp = this.maxHp;
+                this.damage = skin.dmg;
+                this.speed = skin.spd / 100;
+                this.ammo = 30;
+                this.magSize = 30;
+                this.fireRate = 100;
+                this.lastShot = 0;
+                this.reloading = false;
+
+                this.xp = 0;
+                this.xpToLevel = 100;
+                this.level = 1;
+                this.score = 0;
+
+                this.stamina = 100;
+                this.sprinting = false;
+
+                this.skills = {};
+            }
+
+            update(keys, mouse, isPlayer1) {
+                if (!this.alive) return;
+
+                let dx = 0, dy = 0;
+                if (isPlayer1) {
+                    if (keys['w']) dy -= 1;
+                    if (keys['a']) dx -= 1;
+                    if (keys['s']) dy += 1;
+                    if (keys['d']) dx += 1;
+                    this.sprinting = keys['shift'];
+                } else {
+                    if (keys['arrowup']) dy -= 1;
+                    if (keys['arrowleft']) dx -= 1;
+                    if (keys['arrowdown']) dy += 1;
+                    if (keys['arrowright']) dx += 1;
+                }
+
+                const len = Math.sqrt(dx * dx + dy * dy);
+                if (len > 0) {
+                    dx /= len;
+                    dy /= len;
+                    const sprintMult = this.sprinting ? 1.5 : 1;
+                    this.x += dx * this.speed * sprintMult;
+                    this.y += dy * this.speed * sprintMult;
+                    this.x = Math.max(0, Math.min(CANVAS_WIDTH * 2, this.x));
+                    this.y = Math.max(0, Math.min(CANVAS_HEIGHT * 2, this.y));
+                }
+
+                if (keys['r']) this.reload();
+                if (keys['q']) this.useSkill('dash');
+
+                if (this.hp > 0 && this.hp < this.maxHp) {
+                    this.hp += 0.1;
+                }
+            }
+
+            shoot() {
+                if (this.ammo > 0 && Date.now() - this.lastShot > this.fireRate) {
+                    this.ammo--;
+                    this.lastShot = Date.now();
+                    const angle = Math.atan2(game.mouse.y - this.y, game.mouse.x - this.x);
+                    game.projectiles.push(new Projectile(this.x, this.y, angle, this.damage, this.id));
+                    game.particles.push(new Particle(this.x + 20, this.y, 'muzzle'));
+                }
+            }
+
+            reload() {
+                if (!this.reloading && this.ammo < this.magSize) {
+                    this.reloading = true;
+                    this.ammo = this.magSize;
+                }
+            }
+
+            takeDamage(amount) {
+                this.hp -= amount;
+                if (this.hp <= 0) {
+                    this.hp = 0;
+                    this.alive = false;
+                }
+            }
+
+            useSkill(skillId) {
+                if (skillId === 'dash') {
+                    this.x += Math.cos(Math.atan2(game.mouse.y - this.y, game.mouse.x - this.x)) * 50;
+                    this.y += Math.sin(Math.atan2(game.mouse.y - this.y, game.mouse.x - this.x)) * 50;
+                }
+            }
+
+            render(ctx) {
+                if (!this.alive) return;
+
+                ctx.fillStyle = this.skin.color;
+                ctx.fillRect(this.x - 15, this.y - 20, 30, 40);
+                ctx.fillStyle = '#ffdbac';
+                ctx.fillRect(this.x - 12, this.y - 25, 24, 8);
+                ctx.fillStyle = '#333';
+                ctx.fillRect(this.x - 8, this.y - 23, 4, 4);
+                ctx.fillRect(this.x + 4, this.y - 23, 4, 4);
+            }
+        }
+
+        // ==================== ZOMBIE CLASS ====================
+        class Zombie {
+            constructor(x, y, type, wave) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.wave = wave;
+
+                this.baseHp = { normal: 30, runner: 20, tank: 60 }[type] + (wave - 1) * 5;
+                this.hp = this.baseHp;
+                this.speed = { normal: 1.5, runner: 3, tank: 0.8 }[type];
+                this.damage = { normal: 1, runner: 2, tank: 3 }[type];
+                this.color = { normal: '#00aa00', runner: '#ffaa00', tank: '#aa0000' }[type];
+            }
+
+            update(players) {
+                if (players.length === 0) return;
+                const target = players[0];
+                const dx = target.x - this.x;
+                const dy = target.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist > 0) {
+                    this.x += (dx / dist) * this.speed;
+                    this.y += (dy / dist) * this.speed;
+                }
+            }
+
+            takeDamage(amount) {
+                this.hp -= amount;
+            }
+
+            render(ctx) {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x - 12, this.y - 18, 24, 36);
+                ctx.fillStyle = '#000';
+                ctx.fillRect(this.x - 6, this.y - 14, 3, 3);
+                ctx.fillRect(this.x + 3, this.y - 14, 3, 3);
+            }
+        }
+
+        // ==================== PROJECTILE CLASS ====================
+        class Projectile {
+            constructor(x, y, angle, damage, owner) {
+                this.x = x;
+                this.y = y;
+                this.vx = Math.cos(angle) * 5;
+                this.vy = Math.sin(angle) * 5;
+                this.damage = damage;
+                this.owner = owner;
+                this.destroy = false;
+                this.lifetime = 300;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.lifetime--;
+
+                if (this.x < 0 || this.x > CANVAS_WIDTH * 2 || this.y < 0 || this.y > CANVAS_HEIGHT * 2 || this.lifetime <= 0) {
+                    this.destroy = true;
+                }
+            }
+
+            render(ctx) {
+                ctx.fillStyle = '#ffff00';
+                ctx.fillRect(this.x - 2, this.y - 2, 4, 4);
+            }
+        }
+
+        // ==================== PARTICLE CLASS ====================
+        class Particle {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.lifetime = type === 'blood' ? 30 : 15;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.color = type === 'blood' ? '#cc0000' : '#ffff00';
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.lifetime--;
+            }
+
+            render(ctx) {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.lifetime / 30;
+                ctx.fillRect(this.x - 2, this.y - 2, 4, 4);
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // ==================== INIT ====================
+        const game = new ZombieNightfall();
+    </script>
+</body>
+</html>
